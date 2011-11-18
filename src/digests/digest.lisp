@@ -407,7 +407,8 @@ An error will be signaled if there is insufficient room in DIGEST."))
 
 (defun optimized-maker-name (name)
   (let ((*package* (find-package :ironclad)))
-    (intern (format nil "%MAKE-~A-DIGEST" name))))
+    (intern (format nil "%MAKE-~A-DIGEST"
+		    (if (symbolp name) (symbol-name name) name)))))
 
 (defmacro defdigest (name &key digest-length block-length)
   (let ((optimized-maker-name (optimized-maker-name name)))
