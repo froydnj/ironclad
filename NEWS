@@ -1,11 +1,14 @@
 -*- mode: outline -*-
 
-* Version 0.29, released
+* Version 0.29, released 2011-11-17
 
 ** bug fixes
 
 Fixed ENCRYPTED-MESSAGE-LENGTH (not a supported interface) for ECB and
 CBC modes.  (Thanks to Ron Garrett.)
+
+The compiler macros for the high-level digest functions now cope with
+the user's setting of *PRINT-CASE*.  (Thanks to Robert Uhl.)
 
 ** improvements
 
@@ -18,6 +21,10 @@ x86-64 SBCL.  The functions include:
 
 You need a recent SBCL to compile Ironclad now.
 
+** new features
+
+Added PBKDF convenience functions.  (Thanks to Vladimir Sedach.)
+ 
 * Version 0.28, released 2010-03-26
 
 ** bug fixes
