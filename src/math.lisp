@@ -76,7 +76,7 @@ using this test."
      while (zerop (mod s 2))
      finally (return
 	       (loop for k from 0 to 128 by 2
-		  for a = (+ 2 (strong-random (- n 2) *prng*))
+		  for a = (+ 2 (strong-random (- n 2)))
 		  for v = (ironclad:expt-mod a s n)
 		  if (not (= v 1))
 		  do (loop for i = 0 then (1+ i)
@@ -89,7 +89,7 @@ using this test."
 
 (defun generate-prime-in-range (lower-limit upper-limit)
   (assert (< 0 lower-limit upper-limit))
-  (loop for r = (strong-random (- upper-limit lower-limit -1) *prng*)
+  (loop for r = (strong-random (- upper-limit lower-limit -1))
      for x = (+ r lower-limit)
      until (prime-p x)
      finally (return x)))
@@ -98,6 +98,6 @@ using this test."
   "Return a NUM-BITS-bit prime number with very high
 probability (1:2^128 chance of returning a composite number)."
   (loop with big = (ash 2 (1- num-bits))
-     for x = (logior (strong-random big *prng*) big 1)
+     for x = (logior (strong-random big) big 1)
      until (prime-p x)
      finally (return x)))
