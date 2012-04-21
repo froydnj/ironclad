@@ -58,6 +58,7 @@ mathematical interest."
                         collect j))))
 
 (defun prime-p (n &optional (prng *prng*))
+
   "True if N is a prime number (with very high probability; 1:2^128
 chance of returning true for a composite number."
   (assert (>= n 3))

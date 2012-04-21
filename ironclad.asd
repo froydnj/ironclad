@@ -40,6 +40,7 @@
                (:module "src"
                         :components
                         ((:file "package")
+			 (:file "math" :depends-on ("prng" "public-key"))
                          (:file "conditions" :depends-on ("package"))
                          (:file "util" :depends-on ("package"))
                          (:file "macro-utils" :depends-on ("package"))
