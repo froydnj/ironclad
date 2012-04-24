@@ -57,20 +57,20 @@ mathematical interest."
                         unless (zerop (aref array j))
                         collect j))))
 
-(defun prime-p (n)
+(defun prime-p (n &optional (prng *prng*))
   "True if N is a prime number (with very high probability; 1:2^128
 chance of returning true for a composite number."
   (assert (>= n 3))
   (if (find n +small-primes+)
       t
-      (loop for p in +small-primes+
+      (loop for p across +small-primes+
          while (< p n)
          when (zerop (mod n p))
          do (return nil)
          end
-         finally (return (rabin-miller n)))))
+         finally (return (rabin-miller n prng)))))
 
-(defun rabin-miller (n)
+(defun rabin-miller (n prng)
   "Rabin-Miller probabalistic primality test.  There is a 1:2^128
 chance that a composite number will be determined to be a prime number
 using this test."
@@ -82,7 +82,7 @@ using this test."
      while (zerop (mod s 2))
      finally (return
                (loop for k from 0 to 128 by 2
-                  for a = (+ 2 (strong-random (- n 2)))
+                  for a = (+ 2 (strong-random (- n 2) prng))
                   for v = (ironclad:expt-mod a s n)
                   if (not (= v 1))
                   do (loop for i = 0 then (1+ i)
@@ -93,17 +93,17 @@ using this test."
                         do (setf v (ironclad:expt-mod v 2 n)))
                   finally (return t)))))
 
-(defun generate-prime-in-range (lower-limit upper-limit)
+(defun generate-prime-in-range (lower-limit upper-limit &optional (prng *prng*))
   (assert (< 0 lower-limit upper-limit))
-  (loop for r = (strong-random (- upper-limit lower-limit -1))
+  (loop for r = (strong-random (- upper-limit lower-limit -1) prng)
      for x = (+ r lower-limit)
-     until (prime-p x)
+     until (prime-p x prng)
      finally (return x)))
 
-(defun generate-prime (num-bits)
+(defun generate-prime (num-bits &optional (prng *prng*))
   "Return a NUM-BITS-bit prime number with very high
 probability (1:2^128 chance of returning a composite number)."
   (loop with big = (ash 2 (1- num-bits))
-     for x = (logior (strong-random big) big 1)
-     until (prime-p x)
+     for x = (logior (strong-random big prng) big 1)
+     until (prime-p x prng)
      finally (return x)))
