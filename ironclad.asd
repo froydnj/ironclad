@@ -32,7 +32,7 @@
   :maintainer "Nathan Froyd <froydnj@gmail.com>"
   :description "A cryptographic toolkit written in pure Common Lisp"
   :default-component-class ironclad-source-file
-  :depends-on (#+sbcl sb-rotate-byte nibbles sb-posix)
+  #+sbcl :depends-on #+sbcl (sb-rotate-byte sb-posix nibbles)
   :components ((:static-file "README")
                (:static-file "LICENSE")
                (:static-file "TODO")
@@ -40,6 +40,7 @@
                (:module "src"
                         :components
                         ((:file "package")
+			 (:file "math" :depends-on ("prng" "public-key"))
                          (:file "conditions" :depends-on ("package"))
                          (:file "util" :depends-on ("package"))
                          (:file "macro-utils" :depends-on ("package"))
