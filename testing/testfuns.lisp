@@ -249,5 +249,3 @@
 (defparameter *prng-tests*
   `((:fortuna-test . ,'fortuna-test)
     (:generator-test . ,'generator-test)))
-    
-
