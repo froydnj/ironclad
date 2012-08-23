@@ -77,7 +77,11 @@
    #:make-octet-input-stream #:make-octet-output-stream
    #:get-output-stream-octets
 
-   #:make-digesting-stream)
+   #:make-digesting-stream
+
+   ;; authenticated encryption
+   #:make-authenticated-cipher
+   #:tag)
   ;; supported digests
   (:export #:whirlpool #:md2 #:md4 #:md5 #:adler32 #:crc24 #:crc32
            #:tiger #:sha1 #:sha224 #:sha256 #:sha384 #:sha512

@@ -126,7 +126,12 @@
                                   ((:file "prng")
                                    (:file "fortuna" :depends-on ("prng"
                                                                  "generator"))
-                                   (:file "generator")))))
+                                   (:file "generator")))
+                         (:module "auth-enc"
+                                  :depends-on ("ciphers")
+                                  :components
+                                  ((:file "auth-enc")
+                                   (:file "gcm")))))
                (:module "doc"
                         :components
                         ((:html-file "ironclad")
