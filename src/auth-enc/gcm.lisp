@@ -1,5 +1,7 @@
 ;; a working--if slow--GCM implementation
 
+(in-package :crypto)
+
 (defun xor-blocks (x y)
   "Return X XOR Y, where X and Y are 16-byte (128-bit) blocks"
   ;;(declare (type (vector (unsigned-byte 8) 16) x y))
@@ -20,13 +22,13 @@
      ;;do (format t "i: ~a~&xx: ~a~&y: ~a~&" i xx y)
      finally (return y)))
 
-(defun gcm-ctr (key icb plaintext)
+(defun gcm-ctr (mode icb plaintext)
   (apply
    #'concatenate
    '(vector (unsigned-byte 8))
    (loop for i from 0 below (ceiling (length plaintext) 16)
       for cb = icb then (gcm-inc 32 cb)
-      with ecb = (ironclad:make-cipher :aes :key key :mode :ecb)
+      with ecb = (ironclad:make-cipher (cipher mode) :key (key mode) :mode :ecb)
       for x = (subseq plaintext (* i 16)
                       (min (* (1+ i) 16)
                            (length plaintext)))
@@ -65,7 +67,7 @@
                                    (crypto:integer-to-octets (* 8 (length c))
                                                              :n-bits 64)))))
     (ironclad:integer-to-octets hash :n-bits 128)))
-
+#|
 (defun gcm-inc (num-bits octets)
   "Increment the NUM-BITS least significant bits of OCTETS.  NUM-BITS
 must be a multiple of 8 and greater than 0."
@@ -77,7 +79,7 @@ must be a multiple of 8 and greater than 0."
                  (crypto:integer-to-octets (logand (1+ num)
                                                    (1- (ash 1 num-bits)))
                                            :n-bits num-bits))))
-    
+|#    
 (defconstant +gcm-plaintext-length-max+
   (floor (- (expt 2 39) 256) 8))
 
@@ -87,56 +89,60 @@ must be a multiple of 8 and greater than 0."
 (defconstant +gcm-initialization-vector-length-max+
   (floor (1- (expt 2 64)) 8))
 
-(defun gcm-encrypt (key iv plaintext additional-authenticated-data)
-  (assert (and
-           (<= (length plaintext) +gcm-plaintext-length-max+)
-           (<= (length additional-authenticated-data)
-               +gcm-additional-authenthicated-data-length-max+)
-           (<= 1 (length iv) +gcm-initialization-vector-length-max+)))
-  (let* ((cypher (crypto:make-cipher :aes :key key :mode :ecb))
-         (hash-block (coerce #(0 0 0 0
-                               0 0 0 0
-                               0 0 0 0
-                               0 0 0 0)
-                             '(vector (unsigned-byte 8))))
-         j0
-         cyphertext
-         s)
-    (crypto:encrypt-in-place cypher hash-block)
-    (setf j0 (if (= (length iv) 12)
-                 (concatenate '(vector (unsigned-byte 8))
-                              iv
-                              (make-array 3 :initial-element 0)
-                              '(1))
-                  (ghb hash-block #() iv)))
-    (setf cyphertext (gcm-ctr key (gcm-inc 32 j0) plaintext)
-          s (ghb hash-block additional-authenticated-data cyphertext))
-    (list cyphertext (gcm-ctr key j0 s))))
+(defun gcm-encrypt (mode plaintext)
+  (with-slots (key initialization-vector authenticated-data)
+      mode
+    (assert (and
+             (<= (length plaintext) +gcm-plaintext-length-max+)
+             (<= (length authenticated-data)
+                 +gcm-additional-authenthicated-data-length-max+)
+             (<= 1 (length initialization-vector) +gcm-initialization-vector-length-max+)))
+    (let* ((cypher (crypto:make-cipher (cipher mode) :key key :mode :ecb))
+           (hash-block (coerce #(0 0 0 0
+                                 0 0 0 0
+                                 0 0 0 0
+                                 0 0 0 0)
+                               '(vector (unsigned-byte 8))))
+           j0
+           cyphertext
+           s)
+      (crypto:encrypt-in-place cypher hash-block)
+      (setf j0 (if (= (length initialization-vector) 12)
+                   (concatenate '(vector (unsigned-byte 8))
+                                initialization-vector
+                                (make-array 3 :initial-element 0)
+                                '(1))
+                   (ghb hash-block #() initialization-vector)))
+      (setf cyphertext (gcm-ctr mode (gcm-inc 32 j0) plaintext)
+            s (ghb hash-block authenticated-data cyphertext))
+      (list cyphertext (gcm-ctr mode j0 s)))))
 
-(defun gcm-decrypt (key iv cyphertext additional-authenticated-data tag)
+(defun gcm-decrypt (mode cyphertext)
   ;; FIXME: check bitlengths of IV, CYPHERTEXT,
   ;; ADDITIONAL-AUTHENTiCATED-DATA and TAG
-  (let ((cypher (crypto:make-cipher :aes :key key :mode :ecb))
-         (hash-block (coerce #(0 0 0 0
-                               0 0 0 0
-                               0 0 0 0
-                               0 0 0 0)
-                             '(vector (unsigned-byte 8))))
-         j0
-         plaintext
-         s)
-    (crypto:encrypt-in-place cypher hash-block)
-    (setf j0 (if (= (length iv) 12)
-                 (concatenate '(vector (unsigned-byte 8))
-                              iv
-                              (make-array 3 :initial-element 0)
-                              '(1))
-                  (ghb hash-block #() iv)))
-    (setf plaintext (gcm-ctr key (gcm-inc 32 j0) cyphertext)
-          s (ghb hash-block additional-authenticated-data cyphertext))
-    (if (equalp tag (gcm-ctr key j0 s))
-        plaintext
-        'fail)))
+  (with-slots (key initialization-vector authenticated-data tag)
+      mode
+    (let ((cypher (crypto:make-cipher (cipher mode) :key key :mode :ecb))
+          (hash-block (coerce #(0 0 0 0
+                                0 0 0 0
+                                0 0 0 0
+                                0 0 0 0)
+                              '(vector (unsigned-byte 8))))
+          j0
+          plaintext
+          s)
+      (crypto:encrypt-in-place cypher hash-block)
+      (setf j0 (if (= (length initialization-vector) 12)
+                   (concatenate '(vector (unsigned-byte 8))
+                                initialization-vector
+                                (make-array 3 :initial-element 0)
+                                '(1))
+                   (ghb hash-block #() initialization-vector)))
+      (setf plaintext (gcm-ctr mode (gcm-inc 32 j0) cyphertext)
+            s (ghb hash-block authenticated-data cyphertext))
+      (if (equalp tag (gcm-ctr mode j0 s))
+          plaintext
+          'fail))))
 
 (defvar +gcm-test-vectors+
   '((:case 1
@@ -267,7 +273,7 @@ must be a multiple of 8 and greater than 0."
       :cyphertext #(90 141 239 47 12 158 83 241 247 93 120 83 101 158 42 32 238 178 178 42 175 222 100 25 160 88 171 79 111 116 107 244 15 192 195 183 128 242 68 69 45 163 235 241 197 216 44 222 162 65 137 151 32 14 248 46 68 174 126 63)
       :tag #(164 74 130 102 238 28 142 176 200 181 212 207 90 233 241 154))))
 
-(defclass gcm-state ()
+#|(defclass gcm-state ()
   ((key :accessor key
         :initarg :key)
    (initialization-vector :accessor initialization-vector
@@ -373,11 +379,9 @@ must be a multiple of 8 and greater than 0."
                     (declare (ignorable value))
                     (error "tag authenticated mangled cyphertext: ~a~&  ~a"
                            actual-cyphertext cyphertext)))))
-            (format t "passed~&")))))
+            (format t "passed~&")))))|#
 
-(in-package :crypto)
-
-(defun gcm-encrypt (key iv plaintext additional-authenticated-data)
+#|(defun gcm-encrypt (key iv plaintext additional-authenticated-data)
   (assert (and
            (<= (length plaintext) +gcm-plaintext-length-max+)
            (<= (length additional-authenticated-data)
@@ -403,7 +407,7 @@ must be a multiple of 8 and greater than 0."
           s (ghb hash-block additional-authenticated-data cyphertext))
     (list cyphertext (gcm-ctr key j0 s))))
 
-(defun gcm-decrypt (key iv cyphertext additional-authenticated-data tag)
+(defun gcm-decrypt (key iv cyphertext)
   ;; FIXME: check bitlengths of IV, CYPHERTEXT,
   ;; ADDITIONAL-AUTHENTiCATED-DATA and TAG
   (let ((cypher (crypto:make-cipher :aes :key key :mode :ecb))
@@ -423,10 +427,12 @@ must be a multiple of 8 and greater than 0."
                               '(1))
                   (ghb hash-block #() iv)))
     (setf plaintext (gcm-ctr key (gcm-inc 32 j0) cyphertext)
-          s (ghb hash-block additional-authenticated-data cyphertext))
-    (if (equalp tag (gcm-ctr key j0 s))
+          s (ghb hash-block
+                 (additional-authenticated-data mode)
+                 cyphertext))
+    (if (equalp (tag mode) (gcm-ctr key j0 s))
         plaintext
-        'fail)))
+        'fail)))|#
 
 (defclass gcm (authenticated-mode) ())
 

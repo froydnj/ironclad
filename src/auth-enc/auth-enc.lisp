@@ -120,3 +120,48 @@ MAKE-AUTHENTICATED-CIPHER."
 
 (defmacro defmode (name &rest initargs)
   (%defmode name initargs))
+
+(defmethod encrypt ((mode authenticated-mode) plaintext ciphertext
+                    &key
+                    (plaintext-start 0)
+                    (plaintext-end nil)
+                    (ciphertext-start 0)
+                    handle-final-block)
+  (declare (ignore handle-final-block))
+  (unless plaintext-end
+    (setf plaintext-end (length plaintext)))
+  (destructuring-bind (actual-ciphertext tag)
+      (funcall (authenticated-encrypt-function mode)
+               mode
+               (subseq plaintext plaintext-start plaintext-end))
+    (setf (subseq ciphertext
+                  ciphertext-start
+                  (+ ciphertext-start (- plaintext-end plaintext-start)))
+          actual-ciphertext
+          (tag mode)
+          tag)))
+
+(define-condition gcm-authentication-failed (error) ())
+
+(defmethod decrypt ((mode authenticated-mode) plaintext ciphertext
+                    &key
+                    (plaintext-start 0)
+                    (ciphertext-end nil)
+                    (ciphertext-start 0)
+                    handle-final-block)
+  (declare (ignore handle-final-block))
+  (unless (tag mode)
+    (error "All GCM ciphers must have a tag in order to decrypt"))
+  (unless ciphertext-end
+    (setf ciphertext-end (length ciphertext)))
+  (let ((result
+         (funcall (authenticated-decrypt-function mode)
+                  mode
+                  (subseq ciphertext ciphertext-start ciphertext-end))))
+    (when (eq result 'fail)
+      (error 'gcm-authentication-failed))
+    (setf (subseq plaintext plaintext-start (+ plaintext-start
+                                               (- ciphertext-end
+                                                  ciphertext-start)))
+          result)))
+
