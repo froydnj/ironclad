@@ -15,8 +15,8 @@ denominator."
      and v_c = 0 then (- v_d (* q v_c))
      and u_d = 0 then u_c
      and v_d = 1 then v_c
-     until (= c 0)
      for q = (floor d c)
+     until (= c 0)
      finally (return (values d u_d v_d))))
 
 (defconst +small-primes+
