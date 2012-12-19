@@ -11,9 +11,13 @@
 (defclass stream-cipher (cipher)
   ())
 
-(defun encrypt (cipher plaintext ciphertext
-                &key (plaintext-start 0) plaintext-end
-                (ciphertext-start 0) handle-final-block)
+(defgeneric encrypt (cipher plaintext ciphertext
+                            &key plaintext-start plaintext-end
+                            ciphertext-start handle-final-block))
+
+(defmethod encrypt ((cipher cipher) plaintext ciphertext
+                    &key (plaintext-start 0) plaintext-end
+                    (ciphertext-start 0) handle-final-block)
   "Encrypt the data in PLAINTEXT between PLAINTEXT-START and
 PLAINTEXT-END according to CIPHER.  Places the encrypted data in
 CIPHERTEXT, beginning at CIPHERTEXT-START.  Less data than
@@ -27,9 +31,13 @@ CIPHERTEXT."
              plaintext-start plaintext-end ciphertext-start
              handle-final-block)))
 
-(defun decrypt (cipher ciphertext plaintext
-                &key (ciphertext-start 0) ciphertext-end
-                (plaintext-start 0) handle-final-block)
+(defgeneric decrypt (cipher ciphertext plaintext
+                            &key ciphertext-start ciphertext-end
+                            plaintext-start handle-final-block))
+  
+(defmethod decrypt ((cipher cipher) ciphertext plaintext
+                    &key (ciphertext-start 0) ciphertext-end
+                    (plaintext-start 0) handle-final-block)
   "Decrypt the data in CIPHERTEXT between CIPHERTEXT-START and
 CIPHERTEXT-END according to CIPHER.  Places the decrypted data in
 PLAINTEXT, beginning at PLAINTEXT-START.  Less data than

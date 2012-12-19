@@ -45,8 +45,14 @@
                                    :element-type '(unsigned-byte 8))
            while (zerop (mod reseed-count (expt 2 i)))
            collect (with-slots (digest length) (nth i pools)
-                     (digest-sequence digest :digest seed :digest-start)
-                     (digest-sequence :sha256 :digest seed :digest-start)
+                     (produce-digest digest
+                                     :digest seed
+                                     :digest-start (* i (digest-length digest)))
+                     (digest-sequence :sha256 seed
+                                      :digest seed
+                                      :start (* i (digest-length digest))
+                                      :end (* (1+ i) (digest-length digest))
+                                      :digest-start (* i (digest-length digest)))
                      (setf length 0)
                      (reinitialize-instance digest))
            finally (reseed generator seed)))
