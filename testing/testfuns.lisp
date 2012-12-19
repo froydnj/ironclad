@@ -230,9 +230,9 @@
                                 :seed (coerce seed 'crypto::simple-octet-vector)))
         (num-bytes (length expected-sequence)))
     (loop for (source pool-id event) in entropy
-       do (crypto:add-random-event prng source pool-id event))
+       do (crypto:add-random-event source pool-id event prng))
     (equalp expected-sequence
-            (crypto:random-data prng num-bytes))))
+            (crypto:random-data num-bytes prng))))
 
 
 (defun generator-test (name cipher seeds expected-sequences)
