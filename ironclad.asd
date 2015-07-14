@@ -37,6 +37,7 @@
                (:module "src"
                         :components
                         ((:file "package")
+                         (:file "defgenerics" :depends-on ("package"))
                          (:file "conditions" :depends-on ("package"))
                          (:file "util" :depends-on ("package"))
                          (:file "macro-utils" :depends-on ("package"))
@@ -44,8 +45,8 @@
                          ;; FIXME: make this depend on :FEATURE :IRONCLAD-GRAY-STREAMS
                          #+(or lispworks sbcl openmcl cmu allegro)
                          (:file "octet-stream" :depends-on ("common"))
-                         (:file "padding" :depends-on ("common"))
-                         (:file "kdf-common" :depends-on ("package"))
+                         (:file "padding" :depends-on ("common" "defgenerics"))
+                         (:file "kdf-common" :depends-on ("package" "defgenerics"))
                          (:file "pkcs5" :depends-on ("common" "kdf-common"))
                          (:file "scrypt" :depends-on ("kdf-common" "pkcs5"))
                          (:file "password-hash" :depends-on ("pkcs5"))
@@ -56,7 +57,7 @@
                                   ((:file "fndb")
                                    (:file "x86oid-vm" :depends-on ("fndb"))))
                          (:module "ciphers"
-                                  :depends-on ("common" "macro-utils")
+                                  :depends-on ("common" "macro-utils" "defgenerics")
                                   :components
                                   (
                                    ;; block ciphers of various kinds
@@ -82,7 +83,7 @@
                                    (:file "salsa20" :depends-on ("cipher"))
                                    (:file "chacha" :depends-on ("cipher"))))
                          (:module "digests"
-                                  :depends-on ("common" "macro-utils" "sbcl-opt")
+                                  :depends-on ("common" "macro-utils" "sbcl-opt" "defgenerics")
                                   :components
                                   ((:file "digest")
                                    (:file "crc24" :depends-on ("digest"))
@@ -106,13 +107,13 @@
                                   ((:file "hmac")
                                    (:file "cmac")))
                          (:module "public-key"
-                                  :depends-on ("package")
+                                  :depends-on ("package" "defgenerics")
                                   :components
                                   ((:file "public-key")
                                    (:file "dsa" :depends-on ("public-key"))
                                    (:file "rsa" :depends-on ("public-key"))))
                          (:module "prng"
-                                  :depends-on ("digests" "ciphers")
+                                  :depends-on ("digests" "ciphers" "defgenerics")
                                   :components
                                   ((:file "prng")
                                    (:file "fortuna" :depends-on ("prng"

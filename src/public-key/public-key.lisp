@@ -6,31 +6,6 @@
 
 ;;; generic definitions
 
-(defgeneric make-public-key (kind &key &allow-other-keys)
-  (:documentation "Return a public key of KIND, initialized according to
-the specified keyword arguments."))
-
-(defgeneric make-private-key (kind &key &allow-other-keys)
-  (:documentation "Return a private key of KIND, initialized according to
-the specified keyword arguments."))
-
-(defgeneric sign-message (key message &key start end)
-  (:documentation "Produce a key-specific signature of MESSAGE; MESSAGE is a
-(VECTOR (UNSIGNED-BYTE 8)).  START and END bound the extent of the
-message."))
-
-(defgeneric verify-signature (key message signature &key start end)
-  (:documentation "Verify that SIGNATURE is the signature of MESSAGE using
-KEY.  START and END bound the extent of the message."))
-
-(defgeneric encrypt-message (key message &key start end)
-  (:documentation "Encrypt MESSAGE with KEY.  START and END bound the extent
-of the message.  Returns a fresh octet vector."))
-
-(defgeneric decrypt-message (key message &key start end)
-  (:documentation "Decrypt MESSAGE with KEY.  START and END bound the extent
-of the message.  Returns a fresh octet vector."))
-
 
 ;;; converting from integers to octet vectors
 
