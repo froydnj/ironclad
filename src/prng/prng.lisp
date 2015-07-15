@@ -17,14 +17,6 @@
 (defun list-all-prngs ()
   '(fortuna))
 
-(defgeneric make-prng (name &key seed)
-  (:documentation "Create a new NAME-type random number generator,
-  seeding it from SEED.  If SEED is a pathname or namestring, read data
-  from the indicated file; if it is sequence of bytes, use those bytes
-  directly; if it is :RANDOM then read from /dev/random; if it
-  is :URANDOM then read from /dev/urandom; if it is NIL then the
-  generator is not seeded."))
-
 (defmethod make-prng :around (name &key (seed :random))
   (let ((prng (call-next-method)))
     (cond
@@ -39,10 +31,6 @@
 
 (defun random-data (num-bytes &optional (pseudo-random-number-generator *prng*))
   (internal-random-data num-bytes pseudo-random-number-generator))
-
-(defgeneric internal-random-data (num-bytes pseudo-random-number-generator)
-  (:documentation "Generate NUM-BYTES bytes using
-  PSEUDO-RANDOM-NUMBER-GENERATOR"))
 
 (defun random-bits (num-bits &optional (pseudo-random-number-generator *prng*))
   (logand (1- (expt 2 num-bits))
@@ -87,10 +75,6 @@ replacement for COMMON-LISP:RANDOM."
   (internal-read-os-random-seed source prng)
   t)
 
-(defgeneric internal-read-os-random-seed (source prng)
-  (:documentation "(Re)seed PRNG from SOURCE.  SOURCE may be :random
-  or :urandom"))
-
 (defun read-seed (path &optional (pseudo-random-number-generator *prng*))
   "Reseed PSEUDO-RANDOM-NUMBER-GENERATOR from PATH.  If PATH doesn't
 exist, reseed from /dev/random and then write that seed to PATH."
@@ -104,12 +88,5 @@ exist, reseed from /dev/random and then write that seed to PATH."
         #+sbcl(sb-posix:chmod path (logior sb-posix:S-IRUSR sb-posix:S-IWUSR))))
   t)
 
-(defgeneric internal-read-seed (path prng)
-  (:documentation "Reseed PRNG from PATH."))
-
 (defun write-seed (path &optional (prng *prng*))
   (internal-write-seed path prng))
-
-(defgeneric internal-write-seed (path prng)
-  (:documentation "Write enough random data from PRNG to PATH to
-  properly reseed it."))
