@@ -44,16 +44,23 @@
    #:pbkdf2-check-password
 
    ;; public-key encryption operations
-   #:make-public-key #:make-private-key
+   #:make-public-key #:make-private-key #:generate-new-key-pair
    #:sign-message #:verify-signature
    #:encrypt-message #:decrypt-message
 
+   ;; public-key encryption padding
+   #:oaep-encode #:oaep-decode
+
    ;; signatures
    #:make-dsa-signature
+   #:make-elgamal-signature
 
    ;; public-key slot readers
    #:dsa-key-p #:dsa-key-q #:dsa-key-g #:dsa-key-y #:dsa-key-x
    #:dsa-signature-r #:dsa-signature-s
+   #:elgamal-key-p #:elgamal-key-g #:elgamal-key-y #:elgamal-key-x
+   #:elgamal-signature-r #:elgamal-signature-s
+   #:rsa-key-modulus #:rsa-key-exponent
 
    ;; pseudo-random number generators
    #:pseudo-random-number-generator #:list-all-prngs #:make-prng #:random-data
@@ -62,6 +69,7 @@
 
    ;; cryptographic math
    #:generate-prime #:prime-p #:generate-prime-in-range #:egcd
+   #:generate-safe-prime #:find-generator
 
    ;; conditions
    #:ironclad-error #:initialization-vector-not-supplied

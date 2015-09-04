@@ -19,6 +19,83 @@ denominator."
        (values d u_d v_d))
    (setq q (floor d c))))
 
+
+;;; modular arithmetic utilities
+
+(defun modular-inverse (N modulus)
+  "Returns M such that N * M mod MODULUS = 1"
+  (declare (type (integer 1 *) modulus))
+  (declare (type (integer 0 *) n))
+  (when (or (zerop n) (and (evenp n) (evenp modulus)))
+    (return-from modular-inverse 0))
+  (loop with remainder = (list n modulus)
+     and auxiliary = '(1 0)
+     for i from 2
+     while (> (first remainder) 1)
+     do (multiple-value-bind (quotient new-remainder)
+            (floor (second remainder) (first remainder))
+          (push new-remainder remainder)
+          (push (+ (* (- quotient) (first auxiliary)) (second auxiliary))
+                auxiliary))
+     finally (return (let ((inverse (first auxiliary)))
+                       (when (< inverse 0)
+                         (setf inverse (mod inverse modulus)))
+                       ;; check to see if the inverse is zero
+                       (if (zerop (mod (* n inverse) modulus))
+                           0
+                           inverse)))))
+
+(defun expt-mod (n exponent modulus)
+  "As (mod (expt n exponent) modulus), but more efficient (2^k-ary method)."
+  (declare (optimize (speed 3) (safety 0) (space 0) (debug 0)))
+  (assert (>= exponent 0))
+  (assert (> modulus 1))
+  (let* ((result 1)
+
+         ;; Choose the optimal value for k
+         (l (integer-length exponent))
+         (k (cond ((< l 9) 1)
+                  ((< l 25) 2)
+                  ((< l 70) 3)
+                  ((< l 197) 4)
+                  ((< l 539) 5)
+                  ((< l 1434) 6)
+                  ((< l 3715) 7)
+                  ((< l 9400) 8)
+                  ((< l 23291) 9)
+                  ((< l 56652) 10)
+                  ((< l 135599) 11)
+                  ((< l 320035) 12)
+                  ((< l 746156) 13)
+                  ((< l 1721161) 14)
+                  ((< l 3933181) 15)
+                  (t 16)))
+
+         ;; Compute the digits of the exponent in base 2^k
+         (base (expt 2 k))
+         (digits (do ((q exponent)
+                      r
+                      digits)
+                     ((zerop q) digits)
+                   (multiple-value-setq (q r) (floor q base))
+                   (push r digits)))
+
+         (powers (make-array base :element-type 'integer :initial-element 1)))
+
+    ;; Precompute the powers of n
+    (dotimes (i (1- base))
+      (setf (aref powers (1+ i)) (mod (* (aref powers i) n) modulus)))
+
+    ;; Compute the result
+    (dolist (digit digits result)
+      (dotimes (i k)
+        (setf result (mod (* result result) modulus)))
+      (unless (zerop digit)
+        (setf result (mod (* result (aref powers digit)) modulus))))))
+
+
+;;; prime numbers utilities
+
 (defconst +small-primes+
   (make-array 269
               :element-type 'fixnum
@@ -103,7 +180,38 @@ using this test."
 (defun generate-prime (num-bits &optional (prng *prng*))
   "Return a NUM-BITS-bit prime number with very high
 probability (1:2^128 chance of returning a composite number)."
-  (loop with big = (ash 2 (1- num-bits))
+  (loop with big = (ash 1 (1- num-bits))
      for x = (logior (strong-random big prng) big 1)
      until (prime-p x prng)
      finally (return x)))
+
+(defun generate-safe-prime (num-bits &optional (prng *prng*))
+  "Generate a NUM-BITS-bit prime number p so that (p-1)/2 is prime too."
+  (loop
+     for q = (generate-prime (1- num-bits) prng)
+     for p = (1+ (* 2 q))
+     until (prime-p p prng)
+     finally (return p)))
+
+(defun find-generator (p &optional (prng *prng*))
+  "Find a random generator of the multiplicative group (Z/pZ)*
+where p is a safe prime number."
+  (assert (> p 3))
+  (loop
+     with factors = (list 2 (/ (1- p) 2))
+     for g = (strong-random p prng)
+     until (loop
+              for d in factors
+              never (= 1 (expt-mod g (/ (1- p) d) p)))
+     finally (return g)))
+
+(defun find-subgroup-generator (p q &optional (prng *prng*))
+  "Find a random generator of a subgroup of order Q of the multiplicative
+group (Z/pZ)* where p is a prime number."
+  (let ((f (/ (1- p) q)))
+    (assert (integerp f))
+    (loop
+       for h = (+ 2 (strong-random (- p 3) prng))
+       for g = (expt-mod h f p)
+       while (= 1 g)
+       finally (return g))))
