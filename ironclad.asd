@@ -49,7 +49,7 @@
                          (:file "pkcs5" :depends-on ("common" "kdf-common"))
                          (:file "scrypt" :depends-on ("kdf-common" "pkcs5"))
                          (:file "password-hash" :depends-on ("pkcs5"))
-                         (:file "math" :depends-on ("prng" "public-key"))
+                         (:file "math" :depends-on ("prng"))
                          (:module "sbcl-opt"
                                   :depends-on ("package" "common")
                                   :components
@@ -109,11 +109,14 @@
                                    (:file "cmac")
                                    (:file "skein-mac")))
                          (:module "public-key"
-                                  :depends-on ("package")
+                                  :depends-on ("digests" "math")
                                   :components
                                   ((:file "public-key")
                                    (:file "dsa" :depends-on ("public-key"))
-                                   (:file "rsa" :depends-on ("public-key"))))
+                                   (:file "elgamal" :depends-on ("public-key"))
+                                   (:file "rsa" :depends-on ("public-key"))
+                                   (:file "pkcs1" :depends-on ("public-key"))
+                                   (:file "ed25519" :depends-on ("public-key"))))
                          (:module "prng"
                                   :depends-on ("digests" "ciphers")
                                   :components
@@ -225,6 +228,7 @@
                                    (:file "scrypt")
                                    (:file "ironclad")
                                    (:file "prng-tests")
+                                   (:file "public-key")
                                    ;; test vectors
                                    (:test-vector-file "crc24")
                                    (:test-vector-file "crc32")
@@ -292,7 +296,14 @@
                                    (:test-vector-file "chacha-12")
                                    (:test-vector-file "chacha-8")
                                    ;; prng
-                                   (:test-vector-file "prng")))))))
+                                   (:test-vector-file "prng")
+                                   ;; public key
+                                   (:test-vector-file "rsa-enc")
+                                   (:test-vector-file "rsa-sig")
+                                   (:test-vector-file "elgamal-enc")
+                                   (:test-vector-file "elgamal-sig")
+                                   (:test-vector-file "dsa")
+                                   (:test-vector-file "ed25519")))))))
 
 (defmethod asdf:perform ((op asdf:test-op)
                          (c (eql (asdf:find-system :ironclad-tests))))

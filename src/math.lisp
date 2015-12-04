@@ -19,6 +19,106 @@ denominator."
        (values d u_d v_d))
    (setq q (floor d c))))
 
+
+;;; modular arithmetic utilities
+
+(defun modular-inverse (N modulus)
+  "Returns M such that N * M mod MODULUS = 1"
+  (declare (type (integer 1 *) modulus))
+  (declare (type (integer 0 *) n))
+  (declare (optimize (speed 3) (safety 0) (space 0) (debug 0)))
+  (when (or (zerop n) (and (evenp n) (evenp modulus)))
+    (return-from modular-inverse 0))
+  (loop
+     with r1 of-type integer = n
+     and r2 of-type integer = modulus
+     and u1 of-type integer = 1
+     and u2 of-type integer = 0
+     and q of-type integer = 0
+     and r of-type integer = 0
+     until (zerop r2)
+     do (progn
+          (multiple-value-setq (q r) (floor r1 r2))
+          (setf r1 r2
+                r2 r)
+          (decf u1 (* q u2))
+          (rotatef u1 u2))
+     finally (return (let ((inverse u1))
+                       (when (minusp inverse)
+                         (setf inverse (mod inverse modulus)))
+                       (if (zerop (mod (* n inverse) modulus))
+                           0
+                           inverse)))))
+
+(defun expt-mod (n exponent modulus)
+  "As (mod (expt n exponent) modulus), but more efficient (Montgomery ladder)."
+  (declare (optimize (speed 3) (safety 0) (space 0) (debug 0))
+           (type integer n exponent modulus))
+  (assert (>= exponent 0))
+  (assert (> modulus 1))
+  (do ((r0 1)
+       (r1 n)
+       (i (1- (integer-length exponent)) (1- i)))
+      ((minusp i) r0)
+    (declare (type fixnum i)
+             (type integer r0 r1))
+    (if (logbitp i exponent)
+        (setf r0 (mod (* r0 r1) modulus)
+              r1 (mod (* r1 r1) modulus))
+        (setf r1 (mod (* r0 r1) modulus)
+              r0 (mod (* r0 r0) modulus)))))
+
+(defun expt-mod-fast (n exponent modulus)
+  "As (mod (expt n exponent) modulus), but more efficient (2^k-ary method)."
+  (declare (optimize (speed 3) (safety 0) (space 0) (debug 0)))
+  (assert (>= exponent 0))
+  (assert (> modulus 1))
+  (let* ((result 1)
+
+         ;; Choose the optimal value for k
+         (l (integer-length exponent))
+         (k (cond ((< l 9) 1)
+                  ((< l 25) 2)
+                  ((< l 70) 3)
+                  ((< l 197) 4)
+                  ((< l 539) 5)
+                  ((< l 1434) 6)
+                  ((< l 3715) 7)
+                  ((< l 9400) 8)
+                  ((< l 23291) 9)
+                  ((< l 56652) 10)
+                  ((< l 135599) 11)
+                  ((< l 320035) 12)
+                  ((< l 746156) 13)
+                  ((< l 1721161) 14)
+                  ((< l 3933181) 15)
+                  (t 16)))
+
+         ;; Compute the digits of the exponent in base 2^k
+         (base (expt 2 k))
+         (digits (do ((q exponent)
+                      r
+                      digits)
+                     ((zerop q) digits)
+                   (multiple-value-setq (q r) (floor q base))
+                   (push r digits)))
+
+         (powers (make-array base :element-type 'integer :initial-element 1)))
+
+    ;; Precompute the powers of n
+    (dotimes (i (1- base))
+      (setf (aref powers (1+ i)) (mod (* (aref powers i) n) modulus)))
+
+    ;; Compute the result
+    (dolist (digit digits result)
+      (dotimes (i k)
+        (setf result (mod (* result result) modulus)))
+      (unless (zerop digit)
+        (setf result (mod (* result (aref powers digit)) modulus))))))
+
+
+;;; prime numbers utilities
+
 (defconst +small-primes+
   (make-array 269
               :element-type 'fixnum
@@ -83,14 +183,14 @@ using this test."
      finally (return
                (loop for k from 0 to 128 by 2
                   for a = (+ 2 (strong-random (- n 2) prng))
-                  for v = (expt-mod a s n)
+                  for v = (expt-mod-fast a s n)
                   if (not (= v 1))
                   do (loop for i = 0 then (1+ i)
                         while (not (= v (1- n)))
                         if (= i (1- tt))
                         do (return-from rabin-miller)
                         else
-                        do (setf v (expt-mod v 2 n)))
+                        do (setf v (expt-mod-fast v 2 n)))
                   finally (return t)))))
 
 (defun generate-prime-in-range (lower-limit upper-limit &optional (prng *prng*))
@@ -103,7 +203,38 @@ using this test."
 (defun generate-prime (num-bits &optional (prng *prng*))
   "Return a NUM-BITS-bit prime number with very high
 probability (1:2^128 chance of returning a composite number)."
-  (loop with big = (ash 2 (1- num-bits))
+  (loop with big = (ash 1 (1- num-bits))
      for x = (logior (strong-random big prng) big 1)
      until (prime-p x prng)
      finally (return x)))
+
+(defun generate-safe-prime (num-bits &optional (prng *prng*))
+  "Generate a NUM-BITS-bit prime number p so that (p-1)/2 is prime too."
+  (loop
+     for q = (generate-prime (1- num-bits) prng)
+     for p = (1+ (* 2 q))
+     until (prime-p p prng)
+     finally (return p)))
+
+(defun find-generator (p &optional (prng *prng*))
+  "Find a random generator of the multiplicative group (Z/pZ)*
+where p is a safe prime number."
+  (assert (> p 3))
+  (loop
+     with factors = (list 2 (/ (1- p) 2))
+     for g = (strong-random p prng)
+     until (loop
+              for d in factors
+              never (= 1 (expt-mod-fast g (/ (1- p) d) p)))
+     finally (return g)))
+
+(defun find-subgroup-generator (p q &optional (prng *prng*))
+  "Find a random generator of a subgroup of order Q of the multiplicative
+group (Z/pZ)* where p is a prime number."
+  (let ((f (/ (1- p) q)))
+    (assert (integerp f))
+    (loop
+       for h = (+ 2 (strong-random (- p 3) prng))
+       for g = (expt-mod-fast h f p)
+       while (= 1 g)
+       finally (return g))))

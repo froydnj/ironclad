@@ -44,16 +44,18 @@
    #:pbkdf2-check-password
 
    ;; public-key encryption operations
-   #:make-public-key #:make-private-key
+   #:make-public-key #:make-private-key #:generate-key-pair
    #:sign-message #:verify-signature
    #:encrypt-message #:decrypt-message
 
-   ;; signatures
-   #:make-dsa-signature
+   ;; public-key encryption/signature padding
+   #:oaep-encode #:oaep-decode #:pss-encode #:pss-verify
 
    ;; public-key slot readers
    #:dsa-key-p #:dsa-key-q #:dsa-key-g #:dsa-key-y #:dsa-key-x
-   #:dsa-signature-r #:dsa-signature-s
+   #:elgamal-key-p #:elgamal-key-g #:elgamal-key-y #:elgamal-key-x
+   #:rsa-key-modulus #:rsa-key-exponent
+   #:ed25519-key-x #:ed25519-key-y
 
    ;; pseudo-random number generators
    #:pseudo-random-number-generator #:list-all-prngs #:make-prng #:random-data
@@ -62,6 +64,7 @@
 
    ;; cryptographic math
    #:generate-prime #:prime-p #:generate-prime-in-range #:egcd
+   #:generate-safe-prime #:find-generator
 
    ;; conditions
    #:ironclad-error #:initialization-vector-not-supplied
@@ -74,7 +77,7 @@
    ;; utilities
    #:byte-array-to-hex-string #:hex-string-to-byte-array
    #:ascii-string-to-byte-array
-   #:octets-to-integer #:integer-to-octets #:expt-mod
+   #:octets-to-integer #:integer-to-octets #:expt-mod #:expt-mod-fast
 
    ;; streams
    #:make-octet-input-stream #:make-octet-output-stream
