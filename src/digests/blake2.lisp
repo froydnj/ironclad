@@ -51,12 +51,14 @@
 
 (declaim (ftype (function ((simple-array (unsigned-byte 64) (8))
                            (simple-array (unsigned-byte 8) (*))
+                           fixnum
                            (unsigned-byte 128)
                            boolean))
                 blake2-rounds))
-(defun blake2-rounds (state input offset final)
+(defun blake2-rounds (state input start offset final)
   (declare (type (simple-array (unsigned-byte 64) (8)) state)
            (type (simple-array (unsigned-byte 8) (*)) input)
+           (type fixnum start)
            (type (unsigned-byte 128) offset)
            (type boolean final)
            (optimize (speed 3) (space 0) (safety 0) (debug 0)))
@@ -87,7 +89,8 @@
           (v15 (aref +blake2-iv+ 7))
           (m (make-array 16 :element-type '(unsigned-byte 64) :initial-element 0)))
       (declare (type (unsigned-byte 64) v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15)
-               (type (simple-array (unsigned-byte 64) (16)) m))
+               (type (simple-array (unsigned-byte 64) (16)) m)
+               (dynamic-extent m))
       (setf v12 (logxor v12 (ldb (byte 64 0) offset))
             v13 (logxor v13 (ldb (byte 64 64) offset)))
       (when final
@@ -96,7 +99,7 @@
       ;; Get input data as 64-bit little-endian integers
       (dotimes-unrolled (i 16)
         (dotimes-unrolled (j 8)
-          (setf (ldb (byte 8 (* j 8)) (aref m i)) (aref input (+ (* i 8) j)))))
+          (setf (ldb (byte 8 (* j 8)) (aref m i)) (aref input (+ start (* i 8) j)))))
 
       ;; Mixing rounds
       (dotimes-unrolled (i +blake2-rounds+)
@@ -215,14 +218,14 @@
     ;; Process data in buffer
     (when (and (= buffer-index +blake2-block-size+)
                (or final (plusp length)))
-      (blake2-rounds blake2-state buffer offset final)
+      (blake2-rounds blake2-state buffer 0 offset final)
       (setf buffer-index 0))
 
     ;; Process data in message
     (unless final
       (loop until (<= length +blake2-block-size+) do
         (incf offset +blake2-block-size+)
-        (blake2-rounds blake2-state (subseq input start (+ start +blake2-block-size+)) offset nil)
+        (blake2-rounds blake2-state input start offset nil)
         (incf start +blake2-block-size+)
         (decf length +blake2-block-size+)))
 
