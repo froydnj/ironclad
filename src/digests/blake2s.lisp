@@ -61,7 +61,8 @@
            (type boolean final)
            (optimize (speed 3) (space 0) (safety 0) (debug 0)))
   (macrolet ((blake2s-mixing (va vb vc vd x y)
-               ;; Strange bug with SBCL, ror32 doesn't give the right result.
+               ;; Bug in SBCL (< 1.3.6), ror32 doesn't give the right result
+               ;; because it is not compiled correctly.
                ;; Using rol32 instead for now.
                ;; `(setf ,va (mod32+ (mod32+ ,va ,vb) ,x)
                ;;        ,vd (ror32 (logxor ,vd ,va) 16)
