@@ -62,6 +62,10 @@
    #:read-os-random-seed #:read-seed #:write-seed #:fortuna-prng
    #:add-random-event #:fortuna #:strong-random #:random-bits #:*prng*
 
+   ;; ;; Diffie-Hellman key exchange
+   #:dh-params
+   #:generate-dh-params #:compute-dh-public-value #:compute-dh-secret
+
    ;; cryptographic math
    #:generate-prime #:prime-p #:generate-prime-in-range #:egcd
    #:generate-safe-prime #:find-generator
