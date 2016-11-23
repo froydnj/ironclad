@@ -177,18 +177,17 @@
              (let ((digest-size ,(if single-digest-p
                                      (second (first specs))
                                      `(etypecase state
-                                        ,@(reverse specs))))
-                   (state-copy (copy-digest state)))
+                                        ,@(reverse specs)))))
                (etypecase digest
                  (simple-octet-vector
                   ;; verify that the buffer is large enough
                   (if (<= digest-size (- (length digest) digest-start))
-                      (,inner-fun-name state-copy digest digest-start)
+                      (,inner-fun-name state digest digest-start)
                       (error 'insufficient-buffer-space
                              :buffer digest :start digest-start
                              :length digest-size)))
                  (cl:null
-                  (,inner-fun-name state-copy
+                  (,inner-fun-name state
                                    (make-array digest-size
                                                :element-type '(unsigned-byte 8))
                                    0))))))))))
