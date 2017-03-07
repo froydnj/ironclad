@@ -444,3 +444,26 @@
         (cons :elgamal-signature-test 'elgamal-signature-test)
         (cons :dsa-signature-test 'dsa-signature-test)
         (cons :ed25519-signature-test 'ed25519-signature-test)))
+
+;; Diffie-Hellman test
+(defun dh-test ()
+  (let ((dh-params (generate-dh-params :bit-size 2048)))
+    (multiple-value-bind (a X) (compute-dh-public-value dh-params)
+      (multiple-value-bind (b Y) (compute-dh-public-value dh-params)
+        (let ((test-1 (compute-dh-secret dh-params a Y))
+              (test-2 (compute-dh-secret dh-params b X)))
+          (if (= test-1 test-2)
+              (print "Diffie-Hellman test passed.")
+              (error "Diffie-hellman test failed~%
+p: ~A~%g: ~A~%
+First secret exponent:~A~%Second secret exponent:~A~%
+First computed public value:~A~%Second computed public value:~A~%
+First secret:~A~%Second secret:~A~%"
+                     (prime-modulus dh-params)
+                     (generator dh-params)
+                     a
+                     b
+                     X
+                     Y
+                     test-1
+                     test-2)))))))

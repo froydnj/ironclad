@@ -128,7 +128,11 @@
                                   ((:file "prng")
                                    (:file "fortuna" :depends-on ("prng"
                                                                  "generator"))
-                                   (:file "generator")))))
+                                   (:file "generator")))
+                         (:module "key-exchange"
+                                  :depends-on ("prng")
+                                  :components
+                                  ((:file "diffie-hellman")))))
                (:module "doc"
                         :components
                         ((:html-file "ironclad")
