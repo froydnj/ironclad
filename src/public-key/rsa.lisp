@@ -35,8 +35,8 @@
          (l (floor num-bits 2))
          p q n)
     (loop
-       for a = (generate-safe-prime (- num-bits l) prng)
-       for b = (generate-safe-prime l prng)
+       for a = (generate-prime (- num-bits l) prng)
+       for b = (generate-prime l prng)
        for c = (* a b)
        until (and (/= a b) (= num-bits (integer-length c)))
        finally (setf p a
@@ -95,5 +95,6 @@
                                     :n-bits nbits)))
           (pss-verify :sha1 (subseq msg start end) s))
         (let ((s (integer-to-octets (rsa-core (octets-to-integer signature)
-                                              (rsa-key-exponent key) (rsa-key-modulus key)))))
+                                              (rsa-key-exponent key) (rsa-key-modulus key))
+                                    :n-bits (* (- (or end (length msg)) start) 8))))
           (equalp s (subseq msg start end))))))
