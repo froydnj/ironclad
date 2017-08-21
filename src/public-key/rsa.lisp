@@ -87,13 +87,12 @@
 
 (defmethod verify-signature ((key rsa-public-key) msg signature &key (start 0) end pss &allow-other-keys)
   (let ((nbits (integer-length (rsa-key-modulus key))))
-    (unless (= (* 8 (length signature)) nbits)
-      (error "Bad signature length"))
     (if pss
         (let ((s (integer-to-octets (rsa-core (octets-to-integer signature)
                                               (rsa-key-exponent key) (rsa-key-modulus key))
                                     :n-bits nbits)))
           (pss-verify :sha1 (subseq msg start end) s))
         (let ((s (integer-to-octets (rsa-core (octets-to-integer signature)
-                                              (rsa-key-exponent key) (rsa-key-modulus key)))))
+                                              (rsa-key-exponent key) (rsa-key-modulus key))
+                                    :n-bits (* (- (or end (length msg)) start) 8))))
           (equalp s (subseq msg start end))))))
