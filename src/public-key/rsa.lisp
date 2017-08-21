@@ -79,7 +79,10 @@
   (let ((nbits (integer-length (rsa-key-modulus key)))
         (m (subseq msg start end)))
     (when pss
-      (setf m (pss-encode :sha1 m (/ nbits 8))))
+      (setf m (pss-encode (case pss
+                            ('t :sha1)
+                            (otherwise pss))
+                          m (/ nbits 8))))
     (setf m (octets-to-integer m))
   (integer-to-octets
    (rsa-core m (rsa-key-exponent key) (rsa-key-modulus key))
@@ -91,7 +94,11 @@
         (let ((s (integer-to-octets (rsa-core (octets-to-integer signature)
                                               (rsa-key-exponent key) (rsa-key-modulus key))
                                     :n-bits nbits)))
-          (pss-verify :sha1 (subseq msg start end) s))
+          (pss-verify
+           (case pss
+             ('t :sha1)
+             (otherwise pss))
+           (subseq msg start end) s))
         (let ((s (integer-to-octets (rsa-core (octets-to-integer signature)
                                               (rsa-key-exponent key) (rsa-key-modulus key))
                                     :n-bits (* (- (or end (length msg)) start) 8))))
