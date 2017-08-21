@@ -35,8 +35,8 @@
          (l (floor num-bits 2))
          p q n)
     (loop
-       for a = (generate-safe-prime (- num-bits l) prng)
-       for b = (generate-safe-prime l prng)
+       for a = (generate-prime (- num-bits l) prng)
+       for b = (generate-prime l prng)
        for c = (* a b)
        until (and (/= a b) (= num-bits (integer-length c)))
        finally (setf p a
@@ -79,7 +79,10 @@
   (let ((nbits (integer-length (rsa-key-modulus key)))
         (m (subseq msg start end)))
     (when pss
-      (setf m (pss-encode :sha1 m (/ nbits 8))))
+      (setf m (pss-encode (case pss
+                            ('t :sha1)
+                            (otherwise pss))
+                          m (/ nbits 8))))
     (setf m (octets-to-integer m))
   (integer-to-octets
    (rsa-core m (rsa-key-exponent key) (rsa-key-modulus key))
@@ -87,13 +90,16 @@
 
 (defmethod verify-signature ((key rsa-public-key) msg signature &key (start 0) end pss &allow-other-keys)
   (let ((nbits (integer-length (rsa-key-modulus key))))
-    (unless (= (* 8 (length signature)) nbits)
-      (error "Bad signature length"))
     (if pss
         (let ((s (integer-to-octets (rsa-core (octets-to-integer signature)
                                               (rsa-key-exponent key) (rsa-key-modulus key))
                                     :n-bits nbits)))
-          (pss-verify :sha1 (subseq msg start end) s))
+          (pss-verify
+           (case pss
+             ('t :sha1)
+             (otherwise pss))
+           (subseq msg start end) s))
         (let ((s (integer-to-octets (rsa-core (octets-to-integer signature)
-                                              (rsa-key-exponent key) (rsa-key-modulus key)))))
+                                              (rsa-key-exponent key) (rsa-key-modulus key))
+                                    :n-bits (* (- (or end (length msg)) start) 8))))
           (equalp s (subseq msg start end))))))
