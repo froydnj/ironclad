@@ -4,21 +4,6 @@
 
 (cl:in-package #:ironclad-system)
 
-;;; easy-to-type readmacro for creating s-boxes and the like
-
-(defun array-reader (stream subchar arg)
-  (declare (ignore subchar))
-  (let ((array-data (read stream nil stream nil))
-        (array-element-type `(unsigned-byte ,arg)))
-    ;; FIXME: need to make this work for multi-dimensional arrays
-    `(make-array ,(length array-data) :element-type ',array-element-type
-                :initial-contents ',array-data)))
-    
-(defparameter *ironclad-readtable*
-  (let ((readtable (copy-readtable nil)))
-    (set-dispatch-macro-character #\# #\@ #'array-reader readtable)
-    readtable))
-
 (defclass ironclad-source-file (asdf:cl-source-file) ())
 (defclass txt-file (asdf:doc-file) ((type :initform "txt")))
 (defclass css-file (asdf:doc-file) ((type :initform "css")))
@@ -135,37 +120,6 @@
                          ;; XXX ASDF bogosity
                          (:txt-file "ironclad-doc")
                          (:css-file "style")))))
-
-(defun ironclad-implementation-features ()
-  #+sbcl
-  (list* sb-c:*backend-byte-order*
-         (if (= sb-vm:n-word-bits 32)
-             :32-bit
-             :64-bit)
-         :ironclad-fast-mod32-arithmetic
-         :ironclad-gray-streams
-         (when (member :x86-64 *features*)
-           '(:ironclad-fast-mod64-arithmetic)))
-  #+cmu
-  (list (c:backend-byte-order c:*target-backend*)
-        (if (= vm:word-bits 32)
-            :32-bit
-            :64-bit)
-        :ironclad-fast-mod32-arithmetic
-        :ironclad-gray-streams)
-  #+allegro
-  (list :ironclad-gray-streams)
-  #+lispworks
-  (list :ironclad-gray-streams
-        ;; Disable due to problem reports from Lispworks users and
-        ;; non-obviousness of the fix.
-        #+nil
-        (when (not (member :lispworks4 *features*))
-          '(:ironclad-md5-lispworks-int32)))
-  #+openmcl
-  (list :ironclad-gray-streams)
-  #-(or sbcl cmu allegro lispworks openmcl)
-  nil)
 
 (macrolet ((do-silently (&body body)
              `(handler-bind ((style-warning #'muffle-warning)
