@@ -5,6 +5,7 @@
 ;;; key sizes is supported.
 
 (in-package :crypto)
+(in-ironclad-readtable)
 
 ;;; FIXME: is it work it to combine these into one large array and
 ;;; subscript into that rather than having separate arrays?  CMUCL

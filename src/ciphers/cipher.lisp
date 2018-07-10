@@ -2,6 +2,7 @@
 ;;;; cipher.lisp -- generic functions for symmetric encryption
 
 (in-package :crypto)
+(in-ironclad-readtable)
 
 (defclass cipher ()
   ((mode :initarg :mode :accessor mode)

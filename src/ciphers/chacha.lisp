@@ -2,6 +2,7 @@
 ;;; chacha.lisp --implementation of the ChaCha stream cipher
 
 (in-package :crypto)
+(in-ironclad-readtable)
 
 (declaim (type (simple-octet-vector 16) chacha-sigma chacha-tau))
 (defconst chacha-sigma
