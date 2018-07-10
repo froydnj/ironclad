@@ -121,37 +121,6 @@
                          (:txt-file "ironclad-doc")
                          (:css-file "style")))))
 
-(defun ironclad-implementation-features ()
-  #+sbcl
-  (list* sb-c:*backend-byte-order*
-         (if (= sb-vm:n-word-bits 32)
-             :32-bit
-             :64-bit)
-         :ironclad-fast-mod32-arithmetic
-         :ironclad-gray-streams
-         (when (member :x86-64 *features*)
-           '(:ironclad-fast-mod64-arithmetic)))
-  #+cmu
-  (list (c:backend-byte-order c:*target-backend*)
-        (if (= vm:word-bits 32)
-            :32-bit
-            :64-bit)
-        :ironclad-fast-mod32-arithmetic
-        :ironclad-gray-streams)
-  #+allegro
-  (list :ironclad-gray-streams)
-  #+lispworks
-  (list :ironclad-gray-streams
-        ;; Disable due to problem reports from Lispworks users and
-        ;; non-obviousness of the fix.
-        #+nil
-        (when (not (member :lispworks4 *features*))
-          '(:ironclad-md5-lispworks-int32)))
-  #+openmcl
-  (list :ironclad-gray-streams)
-  #-(or sbcl cmu allegro lispworks openmcl)
-  nil)
-
 (macrolet ((do-silently (&body body)
              `(handler-bind ((style-warning #'muffle-warning)
                              ;; It's about as fast as we can make it,
